@@ -1,6 +1,8 @@
 cabal-version:      2.4
 name:               ksqldb-purge
 version:            0.1.0.0
+author: vitoracle
+maintainer: hellofromvitor@icloud.com
 
 -- A short (one-line) description of the package.
 -- synopsis:
@@ -13,12 +15,6 @@ version:            0.1.0.0
 
 -- The license under which the package is released.
 -- license:
-
--- The package author(s).
--- author:
-
--- An email address to which users can send suggestions, bug reports, and patches.
--- maintainer:
 
 -- A copyright notice.
 -- copyright:
@@ -55,11 +51,19 @@ common common-options
                        ScopedTypeVariables
                        TypeApplications
                        TypeFamilies
-                       TypeOperators
+                       TypeOperators,
+                       StandaloneDeriving,
+                       TemplateHaskell
 
 library
     import: common-options
-    exposed-modules:  Lib, Lib.Core, Lib.App.Main, Lib.App.Config, Lib.Effects.Client, Lib.Effects.Console, Lib.Effects.Ksql
+    exposed-modules:  Lib, 
+                      Lib.Core.Purger,
+                      Lib.Core.Ksql,
+                      Lib.Core.Config,
+                      Lib.App.Main, 
+                      Lib.App.Config, 
+                      Lib.Effects.Client
     hs-source-dirs:   src
     default-language: Haskell2010
     build-depends:     aeson,
@@ -69,7 +73,13 @@ library
                        http-client,
                        lens,
                        data-has,
-                       generic-lens
+                       generic-lens,
+                       deriving-trans,
+                       monad-control,
+                       monad-control-identity,
+                       monad-logger,
+                       transformers,
+                       text
 
 executable ksqldb-purge
     import: common-options

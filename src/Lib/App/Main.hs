@@ -1,21 +1,42 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module Lib.App.Main (start) where
-import           Control.Monad.Reader (MonadIO, MonadReader, ReaderT (..))
-import           Lib.Effects.Console      (Console, ConsoleT (..), out)
-import           Lib.App.Config       (Config)
-import           Lib.Effects.Client   (Client, ClientT (..))
-import           Lib.Effects.Ksql     (Ksql (getObjects), ClientKsqlT (..))
-import Lib.Core (app)
+
+import Control.Monad.Identity (IdentityT (runIdentityT))
+import Control.Monad.Reader
+  ( MonadIO,
+    MonadReader (ask),
+    MonadTrans,
+    ReaderT (..),
+    lift,
+  )
+import Control.Monad.Trans.Compose (ComposeT (ComposeT))
+import Control.Monad.Trans.Compose.Infix
+import Control.Monad.Trans.Compose.Transparent
+  ( TransparentT,
+    runTransparentT,
+  )
+import Control.Monad.Trans.Control (MonadTransControl (StT))
+import Control.Monad.Trans.Elevator (Elevator (Ascend))
 import Data.Has
+import Data.Kind
+import Lib.App.Config (Config)
+import Lib.Effects.Client (Client, ClientT (..))
 
-newtype AppM a = AppM { runApp :: ReaderT Config IO a }
-  deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Config)
-    via ( ReaderT Config IO )
-  deriving Console
-    via ConsoleT AppM
-  deriving Client
-    via ClientT AppM
-  deriving Ksql
-    via ClientKsqlT AppM
+newtype AppT m a = AppT {unAppT :: (TransparentT .|> ReaderT String) m a}
+  deriving newtype (Functor, Monad, Applicative, MonadIO)
+  deriving newtype (MonadTrans, MonadTransControl)
+  deriving newtype (MonadReader String)
 
-start :: Config -> IO ()
-start = runReaderT $ runApp app
+type CliStackT = TransparentT .|> ReaderT Bool
+
+newtype CliM a = CliM {unCli :: AppT ((TransparentT .|> ReaderT Bool) IO) a}
+  deriving newtype (Functor, Monad, Applicative, MonadIO, MonadReader String)
+
+start :: IO ()
+start = do
+  -- let another = runTransparentT ./> runReader ./> runConsoleT $ unAppT program
+  print "done"
+  where
+    runReader :: ReaderT String m a -> m a
+    runReader c = runReaderT c "a"
